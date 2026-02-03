@@ -1,41 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageSquare, Loader2 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-  const { toast } = useToast();
-  const supabase = createClient();
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (error) {
-        throw error;
-      }
-    } catch (error: any) {
-      toast({
-        title: "שגיאה",
-        description: error.message || "אירעה שגיאה בהתחברות",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-    }
+    await signIn("google", { callbackUrl: "/dashboard" });
   };
 
   return (

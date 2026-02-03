@@ -1,44 +1,54 @@
-import { createClient } from "@/lib/supabase/server";
+import NextAuth from "next-auth";
+import Google from "next-auth/providers/google";
+import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 
-export async function getSession() {
-  const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  return session;
-}
-
-export async function getUser() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
-}
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  adapter: PrismaAdapter(prisma),
+  providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+  ],
+  pages: {
+    signIn: "/login",
+  },
+  callbacks: {
+    session: ({ session, user }) => ({
+      ...session,
+      user: {
+        ...session.user,
+        id: user.id,
+      },
+    }),
+  },
+});
 
 export async function getCurrentUser() {
-  const user = await getUser();
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return null;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+  });
 
   if (!user) {
     return null;
   }
 
-  // Get or create user in our database
-  let dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
+  // Create default chatbot for new users if they don't have one
+  const chatbot = await prisma.chatbot.findFirst({
+    where: { userId: user.id },
   });
 
-  if (!dbUser) {
-    dbUser = await prisma.user.create({
-      data: {
-        id: user.id,
-        email: user.email!,
-        name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-        avatarUrl: user.user_metadata?.avatar_url || null,
-      },
-    });
-
-    // Create default chatbot for new user
+  if (!chatbot) {
     await prisma.chatbot.create({
       data: {
-        userId: dbUser.id,
+        userId: user.id,
         name: "הצ'אטבוט שלי",
         systemPrompt: "אתה עוזר וירטואלי מועיל. ענה על שאלות בצורה ברורה ומועילה בעברית.",
         welcomeMessage: "שלום! איך אוכל לעזור לך היום?",
@@ -46,5 +56,5 @@ export async function getCurrentUser() {
     });
   }
 
-  return dbUser;
+  return user;
 }

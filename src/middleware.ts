@@ -1,14 +1,16 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 
-export async function middleware(request: NextRequest) {
-  // Add CORS headers for widget API routes
+export default auth((req) => {
+  const { nextUrl } = req;
+  const isLoggedIn = !!req.auth;
+
+  // CORS for widget and chat API
   if (
-    request.nextUrl.pathname.startsWith("/api/widget") ||
-    request.nextUrl.pathname.startsWith("/api/chat")
+    nextUrl.pathname.startsWith("/api/widget") ||
+    nextUrl.pathname.startsWith("/api/chat")
   ) {
-    // Handle preflight requests
-    if (request.method === "OPTIONS") {
+    if (req.method === "OPTIONS") {
       return new NextResponse(null, {
         status: 200,
         headers: {
@@ -18,21 +20,25 @@ export async function middleware(request: NextRequest) {
         },
       });
     }
+    // Allow these routes without auth check
+    return NextResponse.next();
   }
 
-  // Update Supabase session
-  return await updateSession(request);
-}
+  // Protect dashboard routes
+  if (nextUrl.pathname.startsWith("/dashboard") && !isLoggedIn) {
+    return NextResponse.redirect(new URL("/login", nextUrl));
+  }
+
+  // Redirect logged-in users away from auth pages
+  if (nextUrl.pathname === "/login" && isLoggedIn) {
+    return NextResponse.redirect(new URL("/dashboard", nextUrl));
+  }
+
+  return NextResponse.next();
+});
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (public folder)
-     */
     "/((?!_next/static|_next/image|favicon.ico|widget/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

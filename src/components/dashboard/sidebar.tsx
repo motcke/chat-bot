@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,8 +19,8 @@ import {
 interface User {
   id: string;
   name: string | null;
-  email: string;
-  avatarUrl: string | null;
+  email: string | null;
+  image: string | null;
 }
 
 const navigation = [
@@ -34,13 +34,9 @@ const navigation = [
 
 export function Sidebar({ user }: { user: User }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const supabase = createClient();
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
-    router.refresh();
+  const handleSignOut = () => {
+    signOut({ callbackUrl: "/" });
   };
 
   return (
@@ -76,15 +72,15 @@ export function Sidebar({ user }: { user: User }) {
       {/* User section */}
       <div className="border-t p-4">
         <div className="mb-3 flex items-center gap-3">
-          {user.avatarUrl ? (
+          {user.image ? (
             <img
-              src={user.avatarUrl}
+              src={user.image}
               alt={user.name || "User"}
               className="h-10 w-10 rounded-full"
             />
           ) : (
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              {(user.name || user.email)[0].toUpperCase()}
+              {(user.name || user.email || "U")[0].toUpperCase()}
             </div>
           )}
           <div className="min-w-0 flex-1">

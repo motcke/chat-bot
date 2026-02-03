@@ -26,8 +26,6 @@
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-toast": "^1.2.4",
-    "@supabase/ssr": "^0.5.2",
-    "@supabase/supabase-js": "^2.47.10",
     "autoprefixer": "^10.4.20",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.0.0",

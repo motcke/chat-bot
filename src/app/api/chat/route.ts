@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Build message history
-    const chatMessages: ChatMessage[] = conversation.messages.map((m) => ({
+    const chatMessages: ChatMessage[] = conversation.messages.map((m: { role: string; content: string }) => ({
       role: m.role as "user" | "assistant",
       content: m.content,
     }));

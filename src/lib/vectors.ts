@@ -59,5 +59,5 @@ export async function queryKnowledge(
     LIMIT ${topK}
   `;
 
-  return results.map((r) => r.content);
+  return results.map((r: { content: string }) => r.content);
 }
