@@ -1,0 +1,68 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+
+export async function POST(req: Request) {
+  try {
+    const { name, email, password } = await req.json();
+
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: "אימייל וסיסמה הם שדות חובה" },
+        { status: 400 }
+      );
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: "הסיסמה חייבת להכיל לפחות 6 תווים" },
+        { status: 400 }
+      );
+    }
+
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: "משתמש עם אימייל זה כבר קיים" },
+        { status: 400 }
+      );
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+      },
+    });
+
+    // Create default chatbot
+    await prisma.chatbot.create({
+      data: {
+        userId: user.id,
+        name: "הצ'אטבוט שלי",
+        systemPrompt: "אתה עוזר וירטואלי מועיל. ענה על שאלות בצורה ברורה ומועילה בעברית.",
+        welcomeMessage: "שלום! איך אוכל לעזור לך היום?",
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "המשתמש נוצר בהצלחה",
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
+    return NextResponse.json(
+      { error: "אירעה שגיאה בהרשמה" },
+      { status: 500 }
+    );
+  }
+}

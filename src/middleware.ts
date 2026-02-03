@@ -5,6 +5,15 @@ export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
 
+  // Public routes - no auth check needed
+  if (
+    nextUrl.pathname === "/" ||
+    nextUrl.pathname === "/register" ||
+    nextUrl.pathname.startsWith("/api/auth")
+  ) {
+    return NextResponse.next();
+  }
+
   // CORS for widget and chat API
   if (
     nextUrl.pathname.startsWith("/api/widget") ||

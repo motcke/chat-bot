@@ -1,18 +1,68 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageSquare, Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+
+  // Show success message if just registered
+  const registered = searchParams.get("registered");
+  if (registered) {
+    toast({
+      title: "נרשמת בהצלחה!",
+      description: "עכשיו אתה יכול להתחבר",
+    });
+  }
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true);
+    setIsGoogleLoading(true);
     await signIn("google", { callbackUrl: "/dashboard" });
+  };
+
+  const handleCredentialsSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        toast({
+          title: "שגיאה",
+          description: "אימייל או סיסמה לא נכונים",
+          variant: "destructive",
+        });
+      } else {
+        router.push("/dashboard");
+        router.refresh();
+      }
+    } catch (error) {
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בהתחברות",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -27,13 +77,15 @@ export default function LoginPage() {
           <CardDescription>התחבר לחשבון שלך כדי להמשיך</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Google Sign In */}
           <Button
             className="w-full"
             size="lg"
+            variant="outline"
             onClick={handleGoogleSignIn}
-            disabled={isLoading}
+            disabled={isGoogleLoading || isLoading}
           >
-            {isLoading ? (
+            {isGoogleLoading ? (
               <>
                 <Loader2 className="ml-2 h-5 w-5 animate-spin" />
                 מתחבר...
@@ -63,14 +115,62 @@ export default function LoginPage() {
             )}
           </Button>
 
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-muted-foreground">או</span>
+            </div>
+          </div>
+
+          {/* Credentials Sign In */}
+          <form onSubmit={handleCredentialsSignIn} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium">אימייל</label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                dir="ltr"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-medium">סיסמה</label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="הסיסמה שלך"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                dir="ltr"
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              disabled={isLoading || isGoogleLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="ml-2 h-5 w-5 animate-spin" />
+                  מתחבר...
+                </>
+              ) : (
+                "התחבר"
+              )}
+            </Button>
+          </form>
+
           <p className="text-center text-sm text-muted-foreground">
-            בהתחברות אתה מסכים ל
-            <Link href="/terms" className="text-primary hover:underline mx-1">
-              תנאי השימוש
-            </Link>
-            ול
-            <Link href="/privacy" className="text-primary hover:underline mx-1">
-              מדיניות הפרטיות
+            אין לך חשבון?{" "}
+            <Link href="/register" className="text-primary hover:underline">
+              הירשם עכשיו
             </Link>
           </p>
         </CardContent>
