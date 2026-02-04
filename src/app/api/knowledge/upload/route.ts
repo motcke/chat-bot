@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = 'force-dynamic';
 
 // Simple upload - save text and mark as ready immediately
-// No embeddings, no processing, just save the text
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
@@ -40,9 +39,8 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Only allow text files
-      const allowedExtensions = [".txt", ".md", ".csv", ".json"];
       const ext = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
+      const allowedExtensions = [".txt", ".md", ".csv", ".json", ".pdf"];
 
       if (!allowedExtensions.includes(ext)) {
         return NextResponse.json(
@@ -51,9 +49,26 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Read file content
       const buffer = Buffer.from(await file.arrayBuffer());
-      const content = buffer.toString("utf-8");
+      let content: string;
+
+      // Handle PDF files
+      if (ext === ".pdf") {
+        try {
+          const pdfParse = (await import("pdf-parse")).default;
+          const pdfData = await pdfParse(buffer);
+          content = pdfData.text;
+        } catch (pdfError: any) {
+          console.error("PDF parse error:", pdfError?.message);
+          return NextResponse.json(
+            { error: `לא ניתן לקרוא את קובץ ה-PDF: ${file.name}` },
+            { status: 400 }
+          );
+        }
+      } else {
+        // Text files
+        content = buffer.toString("utf-8");
+      }
 
       if (!content.trim()) {
         return NextResponse.json(
@@ -62,14 +77,14 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Save to database - immediately ready (no processing needed)
+      // Save to database - immediately ready
       const source = await prisma.knowledgeSource.create({
         data: {
           chatbotId: chatbot.id,
           type: "file",
           name: file.name,
           content: content.slice(0, 100000), // Limit to 100KB
-          status: "ready", // Immediately ready - no embedding processing
+          status: "ready",
         },
       });
 

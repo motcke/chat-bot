@@ -125,8 +125,8 @@ export default function KnowledgePage() {
       setSources(prev => [...uploadedSources, ...prev]);
 
       toast({
-        title: "הקבצים נשמרו",
-        description: "הקבצים יעובדו בקרוב אוטומטית",
+        title: "הקבצים נוספו בהצלחה!",
+        description: "המידע זמין לשימוש בצ'אט",
       });
 
     } catch (error: any) {
@@ -387,14 +387,14 @@ export default function KnowledgePage() {
           <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-gray-800">העלאת קבצים</CardTitle>
-              <CardDescription>העלה קבצי TXT, MD, CSV או JSON (עד 5MB)</CardDescription>
+              <CardDescription>העלה קבצי טקסט או PDF (עד 5MB)</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="border-2 border-dashed border-blue-200 rounded-2xl p-10 text-center bg-blue-50/50 hover:bg-blue-50 hover:border-blue-300 transition-all">
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".txt,.md,.csv,.json"
+                  accept=".txt,.md,.csv,.json,.pdf"
                   multiple
                   onChange={handleFileUpload}
                   className="hidden"
@@ -412,10 +412,10 @@ export default function KnowledgePage() {
                     )}
                   </div>
                   <p className="text-gray-700 font-medium">
-                    {isUploading ? "מעלה ומעבד..." : "לחץ לבחירת קבצים או גרור לכאן"}
+                    {isUploading ? "מעלה..." : "לחץ לבחירת קבצים או גרור לכאן"}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
-                    TXT, MD, CSV, JSON עד 5MB
+                    PDF, TXT, MD, CSV, JSON עד 5MB
                   </p>
                 </label>
               </div>
