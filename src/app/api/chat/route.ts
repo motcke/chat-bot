@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { generateChatResponseStream, ChatMessage } from "@/lib/anthropic";
 import { queryKnowledge } from "@/lib/vectors";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const { message, sessionId, chatbotId: providedChatbotId } = await req.json();

@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { indexKnowledge } from "@/lib/vectors";
 import * as cheerio from "cheerio";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
