@@ -19,6 +19,7 @@ import {
   Database,
   FolderOpen,
   Plus,
+  RefreshCw,
 } from "lucide-react";
 
 interface KnowledgeSource {
@@ -36,6 +37,7 @@ export default function KnowledgePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isAddingUrl, setIsAddingUrl] = useState(false);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
   const [url, setUrl] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -154,6 +156,52 @@ export default function KnowledgePage() {
     }
   };
 
+  const handleRetry = async (id: string) => {
+    setRetryingId(id);
+
+    // Update local state to show processing
+    setSources(sources.map(s =>
+      s.id === id ? { ...s, status: "processing", error: null } : s
+    ));
+
+    try {
+      const res = await fetch(`/api/knowledge/${id}/retry`, {
+        method: "POST",
+      });
+
+      if (res.ok) {
+        const updatedSource = await res.json();
+        setSources(sources.map(s =>
+          s.id === id ? updatedSource : s
+        ));
+
+        if (updatedSource.status === "ready") {
+          toast({
+            title: "עובד!",
+            description: "המקור עובד בהצלחה",
+          });
+        } else {
+          toast({
+            title: "נכשל",
+            description: updatedSource.error || "העיבוד נכשל",
+            variant: "destructive",
+          });
+        }
+      } else {
+        throw new Error("Failed to retry");
+      }
+    } catch (error) {
+      toast({
+        title: "שגיאה",
+        description: "לא ניתן לעבד את המקור",
+        variant: "destructive",
+      });
+      fetchSources(); // Refresh to get actual state
+    } finally {
+      setRetryingId(null);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "ready":
@@ -189,6 +237,8 @@ export default function KnowledgePage() {
 
   const readyCount = sources.filter((s) => s.status === "ready").length;
   const processingCount = sources.filter((s) => s.status === "processing").length;
+  const pendingCount = sources.filter((s) => s.status === "pending").length;
+  const failedCount = sources.filter((s) => s.status === "failed").length;
 
   return (
     <div>
@@ -206,7 +256,7 @@ export default function KnowledgePage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Card className="border-0 shadow-lg bg-gradient-to-br from-violet-50 to-purple-100">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
@@ -228,7 +278,7 @@ export default function KnowledgePage() {
                 <CheckCircle className="h-6 w-6 text-white" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">מוכנים לשימוש</p>
+                <p className="text-sm text-gray-600">מוכנים</p>
                 <p className="text-2xl font-bold text-gray-800">{readyCount}</p>
               </div>
             </div>
@@ -243,7 +293,21 @@ export default function KnowledgePage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">בעיבוד</p>
-                <p className="text-2xl font-bold text-gray-800">{processingCount}</p>
+                <p className="text-2xl font-bold text-gray-800">{processingCount + pendingCount}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-orange-100">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-orange-500 shadow-lg shadow-red-500/30">
+                <XCircle className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">נכשלו</p>
+                <p className="text-2xl font-bold text-gray-800">{failedCount}</p>
               </div>
             </div>
           </CardContent>
@@ -272,14 +336,14 @@ export default function KnowledgePage() {
           <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-gray-800">העלאת קבצים</CardTitle>
-              <CardDescription>העלה קבצי PDF, TXT או DOCX</CardDescription>
+              <CardDescription>העלה קבצי TXT, MD, CSV או JSON (עד 5MB)</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="border-2 border-dashed border-blue-200 rounded-2xl p-10 text-center bg-blue-50/50 hover:bg-blue-50 hover:border-blue-300 transition-all">
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".pdf,.txt,.docx"
+                  accept=".txt,.md,.csv,.json"
                   multiple
                   onChange={handleFileUpload}
                   className="hidden"
@@ -297,10 +361,10 @@ export default function KnowledgePage() {
                     )}
                   </div>
                   <p className="text-gray-700 font-medium">
-                    {isUploading ? "מעלה..." : "לחץ לבחירת קבצים או גרור לכאן"}
+                    {isUploading ? "מעלה ומעבד..." : "לחץ לבחירת קבצים או גרור לכאן"}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
-                    PDF, TXT, DOCX עד 10MB
+                    TXT, MD, CSV, JSON עד 5MB
                   </p>
                 </label>
               </div>
@@ -398,14 +462,34 @@ export default function KnowledgePage() {
                       </div>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(source.id)}
-                    className="rounded-xl hover:bg-red-100"
-                  >
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {/* Retry button for failed or pending sources */}
+                    {(source.status === "failed" || source.status === "pending") && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRetry(source.id)}
+                        disabled={retryingId === source.id}
+                        className="rounded-xl hover:bg-blue-100"
+                        title="נסה שוב"
+                      >
+                        {retryingId === source.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4 text-blue-500" />
+                        )}
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(source.id)}
+                      className="rounded-xl hover:bg-red-100"
+                      title="מחק"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
