@@ -7,9 +7,12 @@ export const dynamic = 'force-dynamic';
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params in Next.js 14+
+    const { id } = await params;
+
     const user = await getCurrentUser();
 
     if (!user) {
@@ -17,7 +20,7 @@ export async function DELETE(
     }
 
     const source = await prisma.knowledgeSource.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { chatbot: true },
     });
 
@@ -34,7 +37,7 @@ export async function DELETE(
 
     // Delete from database
     await prisma.knowledgeSource.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });

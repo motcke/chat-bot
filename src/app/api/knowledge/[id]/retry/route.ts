@@ -9,9 +9,12 @@ export const maxDuration = 300; // 5 minutes - matches process route
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params in Next.js 14+
+    const { id } = await params;
+
     const user = await getCurrentUser();
 
     if (!user) {
@@ -32,7 +35,7 @@ export async function POST(
     const source = await withRetry(() =>
       prisma.knowledgeSource.findFirst({
         where: {
-          id: params.id,
+          id: id,
           chatbotId: chatbot.id,
         },
       })
