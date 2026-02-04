@@ -27,13 +27,13 @@ export default async function DashboardLayout({
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-bl from-blue-50 via-white to-gray-50">
-      {/* Sidebar - will appear on the right side due to RTL */}
+    <div className="flex min-h-screen bg-gradient-to-bl from-blue-50 via-white to-gray-50">
+      {/* Sidebar - responsive with mobile drawer */}
       <Sidebar user={userData} />
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        <div className="min-h-full p-6 lg:p-8">
+      {/* Main content - with top padding for mobile header */}
+      <main className="flex-1 overflow-auto pt-14 lg:pt-0">
+        <div className="min-h-full p-4 sm:p-6 lg:p-8">
           {children}
         </div>
       </main>

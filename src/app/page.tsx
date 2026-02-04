@@ -14,6 +14,8 @@ import {
   Check,
   Send,
   User,
+  Menu,
+  X,
 } from "lucide-react";
 
 // Animated Background Component
@@ -155,7 +157,7 @@ function AnimatedChat() {
   }, [visibleMessages]);
 
   return (
-    <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-md border border-gray-100">
+    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden w-full max-w-[320px] sm:max-w-md border border-gray-100">
       {/* Chat Header */}
       <div className="bg-gradient-to-l from-blue-500 to-blue-600 p-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
@@ -250,6 +252,7 @@ function AnimatedChat() {
 
 export default function HomePage() {
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -259,6 +262,27 @@ export default function HomePage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Close mobile menu on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileMenuOpen(false);
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, []);
+
+  // Prevent body scroll when menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
+
   return (
     <div className="min-h-screen bg-white relative">
       {/* Animated Background */}
@@ -267,16 +291,16 @@ export default function HomePage() {
       {/* Header */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? "bg-white/80 backdrop-blur-md shadow-sm" : ""
+          scrolled || mobileMenuOpen ? "bg-white/95 backdrop-blur-md shadow-sm" : ""
         }`}
       >
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-3 sm:py-4">
           <nav className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30">
-                <Bot className="h-6 w-6 text-white" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30">
+                <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-l from-blue-600 to-blue-500 bg-clip-text text-transparent">
+              <span className="text-lg sm:text-xl font-bold bg-gradient-to-l from-blue-600 to-blue-500 bg-clip-text text-transparent">
                 ChatBot
               </span>
             </div>
@@ -293,7 +317,8 @@ export default function HomePage() {
               </a>
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* Desktop buttons */}
+            <div className="hidden sm:flex items-center gap-3">
               <Link href="/login">
                 <Button variant="ghost" className="rounded-xl text-gray-600 hover:text-blue-600">
                   התחברות
@@ -305,22 +330,78 @@ export default function HomePage() {
                 </Button>
               </Link>
             </div>
+
+            {/* Mobile menu button */}
+            <button
+              className="sm:hidden flex h-10 w-10 items-center justify-center rounded-xl hover:bg-gray-100 transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "סגור תפריט" : "פתח תפריט"}
+            >
+              {mobileMenuOpen ? (
+                <X className="h-6 w-6 text-gray-700" />
+              ) : (
+                <Menu className="h-6 w-6 text-gray-700" />
+              )}
+            </button>
           </nav>
         </div>
+
+        {/* Mobile menu dropdown */}
+        {mobileMenuOpen && (
+          <div className="sm:hidden border-t border-gray-100 bg-white/95 backdrop-blur-md">
+            <div className="container mx-auto px-4 py-4 space-y-4">
+              <div className="flex flex-col gap-3">
+                <a
+                  href="#features"
+                  className="text-gray-600 hover:text-blue-600 transition-colors py-2 text-lg"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  תכונות
+                </a>
+                <a
+                  href="#how-it-works"
+                  className="text-gray-600 hover:text-blue-600 transition-colors py-2 text-lg"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  איך זה עובד
+                </a>
+                <a
+                  href="#pricing"
+                  className="text-gray-600 hover:text-blue-600 transition-colors py-2 text-lg"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  מחירים
+                </a>
+              </div>
+              <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="outline" className="w-full rounded-xl text-gray-600">
+                    התחברות
+                  </Button>
+                </Link>
+                <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="w-full rounded-xl bg-gradient-to-l from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700">
+                    הרשמה
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
-      <main className="relative pt-32 pb-20">
+      <main className="relative pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 md:pb-20">
         <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
             {/* Right side - Text (RTL) */}
-            <div className="text-right">
-              <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
-                <Sparkles className="h-4 w-4" />
+            <div className="text-right order-1 lg:order-1">
+              <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium mb-4 sm:mb-6">
+                <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 מבוסס בינה מלאכותית מתקדמת
               </div>
 
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 mb-6 leading-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 mb-4 sm:mb-6 leading-tight">
                 צ׳אטבוט חכם
                 <br />
                 <span className="bg-gradient-to-l from-blue-600 to-blue-500 bg-clip-text text-transparent">
@@ -328,55 +409,55 @@ export default function HomePage() {
                 </span>
               </h1>
 
-              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+              <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 leading-relaxed">
                 צור צ׳אטבוט מותאם אישית תוך דקות. העלה מסמכים,
                 הוסף לינקים, והטמע באתר שלך בשורת קוד אחת.
                 הלקוחות שלך יקבלו מענה מיידי 24/7.
               </p>
 
-              <div className="flex flex-wrap gap-4 mb-8">
-                <Link href="/register">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <Link href="/register" className="w-full sm:w-auto">
                   <Button
                     size="lg"
-                    className="rounded-xl bg-gradient-to-l from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/30 text-lg px-8 h-14"
+                    className="w-full sm:w-auto rounded-xl bg-gradient-to-l from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/30 text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-14"
                   >
                     התחל עכשיו - חינם
                     <ArrowLeft className="h-5 w-5 mr-2" />
                   </Button>
                 </Link>
-                <Link href="#how-it-works">
+                <Link href="#how-it-works" className="w-full sm:w-auto">
                   <Button
                     size="lg"
                     variant="outline"
-                    className="rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-lg px-8 h-14"
+                    className="w-full sm:w-auto rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-14"
                   >
                     איך זה עובד?
                   </Button>
                 </Link>
               </div>
 
-              <div className="flex items-center gap-6 text-sm text-gray-500">
-                <div className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-green-500" />
+              <div className="flex flex-wrap items-center justify-end gap-x-4 sm:gap-x-6 gap-y-2 text-xs sm:text-sm text-gray-500">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                   ללא כרטיס אשראי
                 </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-green-500" />
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                   הגדרה ב-5 דקות
                 </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-green-500" />
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                   תמיכה בעברית
                 </div>
               </div>
             </div>
 
             {/* Left side - Animated Chat */}
-            <div className="flex justify-center lg:justify-start">
+            <div className="flex justify-center lg:justify-start order-2 lg:order-2 mt-8 lg:mt-0">
               <div className="relative">
-                {/* Decorative elements */}
-                <div className="absolute -top-4 -right-4 w-24 h-24 bg-blue-200 rounded-full blur-2xl opacity-50"></div>
-                <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-purple-200 rounded-full blur-2xl opacity-50"></div>
+                {/* Decorative elements - smaller on mobile */}
+                <div className="absolute -top-4 -right-4 w-16 sm:w-24 h-16 sm:h-24 bg-blue-200 rounded-full blur-2xl opacity-50"></div>
+                <div className="absolute -bottom-4 -left-4 w-20 sm:w-32 h-20 sm:h-32 bg-purple-200 rounded-full blur-2xl opacity-50"></div>
 
                 <AnimatedChat />
               </div>
@@ -386,44 +467,44 @@ export default function HomePage() {
       </main>
 
       {/* Features Section */}
-      <section id="features" className="py-20 relative">
+      <section id="features" className="py-12 sm:py-16 md:py-20 relative">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+          <div className="text-center mb-10 sm:mb-12 md:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-3 sm:mb-4">
               למה לבחור בנו?
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
               כל הכלים שאתה צריך ליצור צ׳אטבוט מקצועי לעסק שלך
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-lg border border-gray-100 hover:shadow-xl transition-all hover:-translate-y-1">
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30">
-                <Zap className="h-7 w-7 text-white" />
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+            <div className="bg-white/80 backdrop-blur-sm p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl shadow-lg border border-gray-100 hover:shadow-xl transition-all hover:-translate-y-1">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-lg shadow-blue-500/30">
+                <Zap className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-3">מהיר ופשוט</h3>
-              <p className="text-gray-600 leading-relaxed">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 sm:mb-3">מהיר ופשוט</h3>
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                 העלה מסמכים או הוסף לינקים, והצ׳אטבוט שלך מוכן לשימוש תוך דקות ספורות
               </p>
             </div>
 
-            <div className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-lg border border-gray-100 hover:shadow-xl transition-all hover:-translate-y-1">
-              <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-green-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30">
-                <Shield className="h-7 w-7 text-white" />
+            <div className="bg-white/80 backdrop-blur-sm p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl shadow-lg border border-gray-100 hover:shadow-xl transition-all hover:-translate-y-1">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-emerald-500 to-green-500 rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-lg shadow-emerald-500/30">
+                <Shield className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-3">חכם ומדויק</h3>
-              <p className="text-gray-600 leading-relaxed">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 sm:mb-3">חכם ומדויק</h3>
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                 מבוסס על טכנולוגיית AI מתקדמת שמבינה את התוכן שלך ועונה בצורה מדויקת
               </p>
             </div>
 
-            <div className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-lg border border-gray-100 hover:shadow-xl transition-all hover:-translate-y-1">
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/30">
-                <Code className="h-7 w-7 text-white" />
+            <div className="bg-white/80 backdrop-blur-sm p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl shadow-lg border border-gray-100 hover:shadow-xl transition-all hover:-translate-y-1 sm:col-span-2 md:col-span-1">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-lg shadow-purple-500/30">
+                <Code className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-3">הטמעה קלה</h3>
-              <p className="text-gray-600 leading-relaxed">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 sm:mb-3">הטמעה קלה</h3>
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                 שורת קוד אחת - זה כל מה שצריך כדי להוסיף את הצ׳אטבוט לאתר שלך
               </p>
             </div>
@@ -432,18 +513,18 @@ export default function HomePage() {
       </section>
 
       {/* How it works */}
-      <section id="how-it-works" className="py-20 bg-gradient-to-br from-gray-50 to-white">
+      <section id="how-it-works" className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-gray-50 to-white">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+          <div className="text-center mb-10 sm:mb-12 md:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-3 sm:mb-4">
               איך זה עובד?
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-base sm:text-lg text-gray-600">
               ארבעה צעדים פשוטים להפעלת הצ׳אטבוט שלך
             </p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
             {[
               { num: 1, title: "הירשם", desc: "צור חשבון חינמי תוך שניות" },
               { num: 2, title: "העלה תוכן", desc: "העלה מסמכים או הוסף לינקים" },
@@ -451,25 +532,25 @@ export default function HomePage() {
               { num: 4, title: "הטמע", desc: "הוסף שורת קוד לאתר שלך" },
             ].map((step) => (
               <div key={step.num} className="text-center group">
-                <div className="relative mx-auto mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
+                <div className="relative mx-auto mb-3 sm:mb-4 md:mb-6">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl sm:rounded-2xl flex items-center justify-center text-lg sm:text-xl md:text-2xl font-bold shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform mx-auto">
                     {step.num}
                   </div>
                   {step.num < 4 && (
-                    <div className="hidden md:block absolute top-1/2 -left-8 w-8 h-0.5 bg-blue-200"></div>
+                    <div className="hidden md:block absolute top-1/2 -left-4 lg:-left-8 w-4 lg:w-8 h-0.5 bg-blue-200"></div>
                   )}
                 </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">{step.title}</h3>
-                <p className="text-gray-600">{step.desc}</p>
+                <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 mb-1 sm:mb-2">{step.title}</h3>
+                <p className="text-xs sm:text-sm md:text-base text-gray-600">{step.desc}</p>
               </div>
             ))}
           </div>
 
-          <div className="text-center mt-12">
+          <div className="text-center mt-8 sm:mt-10 md:mt-12">
             <Link href="/register">
               <Button
                 size="lg"
-                className="rounded-xl bg-gradient-to-l from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/30 text-lg px-8"
+                className="rounded-xl bg-gradient-to-l from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/30 text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-auto"
               >
                 התחל עכשיו
                 <ArrowLeft className="h-5 w-5 mr-2" />
@@ -480,21 +561,21 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section id="pricing" className="py-20">
+      <section id="pricing" className="py-12 sm:py-16 md:py-20">
         <div className="container mx-auto px-4">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl p-12 text-center text-white relative overflow-hidden">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 text-center text-white relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iYSIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVHJhbnNmb3JtPSJyb3RhdGUoNDUpIj48cGF0aCBkPSJNLTEwIDMwaDYwdjJoLTYweiIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3QgZmlsbD0idXJsKCNhKSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIvPjwvc3ZnPg==')] opacity-50"></div>
             <div className="relative z-10">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
                 מוכן להתחיל?
               </h2>
-              <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+              <p className="text-base sm:text-lg md:text-xl text-blue-100 mb-6 sm:mb-8 max-w-2xl mx-auto">
                 הצטרף לאלפי עסקים שכבר משתמשים בצ׳אטבוט שלנו לשיפור שירות הלקוחות
               </p>
               <Link href="/register">
                 <Button
                   size="lg"
-                  className="rounded-xl bg-white text-blue-600 hover:bg-blue-50 shadow-lg text-lg px-8 h-14"
+                  className="rounded-xl bg-white text-blue-600 hover:bg-blue-50 shadow-lg text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-14"
                 >
                   התחל עכשיו - חינם
                   <ArrowLeft className="h-5 w-5 mr-2" />
@@ -506,25 +587,25 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-gray-100">
+      <footer className="py-8 sm:py-10 md:py-12 border-t border-gray-100">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30">
-                <Bot className="h-6 w-6 text-white" />
+          <div className="flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:justify-between">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30">
+                <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-l from-blue-600 to-blue-500 bg-clip-text text-transparent">
+              <span className="text-lg sm:text-xl font-bold bg-gradient-to-l from-blue-600 to-blue-500 bg-clip-text text-transparent">
                 ChatBot
               </span>
             </div>
 
-            <div className="flex items-center gap-6 text-gray-500">
+            <div className="flex items-center gap-4 sm:gap-6 text-sm sm:text-base text-gray-500">
               <a href="#" className="hover:text-blue-600 transition-colors">תנאי שימוש</a>
               <a href="#" className="hover:text-blue-600 transition-colors">פרטיות</a>
               <a href="#" className="hover:text-blue-600 transition-colors">צור קשר</a>
             </div>
 
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-400 text-xs sm:text-sm">
               © 2024 ChatBot. כל הזכויות שמורות.
             </p>
           </div>
