@@ -5,6 +5,34 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
 
+// Helper function to retry database operations
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries = 3
+): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      const isConnectionError =
+        error.message?.includes('closed the connection') ||
+        error.message?.includes('P1017') ||
+        error.message?.includes('P1001') ||
+        error.message?.includes('P1002');
+
+      if (isConnectionError && i < maxRetries - 1) {
+        console.log(`Auth retry ${i + 1}/${maxRetries} after connection error`);
+        await prisma.$disconnect();
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await prisma.$connect();
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error('Max retries reached');
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   trustHost: true,
@@ -32,24 +60,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // Check for admin password
         if (password === process.env.ADMIN_PASSWORD && process.env.ADMIN_PASSWORD) {
-          let user = await prisma.user.findUnique({
-            where: { email },
-          });
+          let user = await withRetry(() =>
+            prisma.user.findUnique({
+              where: { email },
+            })
+          );
 
           if (!user) {
-            user = await prisma.user.create({
-              data: {
-                email,
-                name: "Admin",
-                isAdmin: true,
-              },
-            });
+            user = await withRetry(() =>
+              prisma.user.create({
+                data: {
+                  email,
+                  name: "Admin",
+                  isAdmin: true,
+                },
+              })
+            );
           } else {
             // Update to admin if not already
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { isAdmin: true },
-            });
+            await withRetry(() =>
+              prisma.user.update({
+                where: { id: user.id },
+                data: { isAdmin: true },
+              })
+            );
           }
 
           return {
@@ -61,9 +95,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         // Regular user login
-        const user = await prisma.user.findUnique({
-          where: { email },
-        });
+        const user = await withRetry(() =>
+          prisma.user.findUnique({
+            where: { email },
+          })
+        );
 
         if (!user || !user.password) {
           return null;
