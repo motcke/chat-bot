@@ -46,6 +46,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                   email,
                   name: "Admin",
                   isAdmin: true,
+                  isApproved: true,
                 },
               })
             );
@@ -55,7 +56,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             await withRetry(() =>
               prisma.user.update({
                 where: { id: userId },
-                data: { isAdmin: true },
+                data: { isAdmin: true, isApproved: true },
               })
             );
           }

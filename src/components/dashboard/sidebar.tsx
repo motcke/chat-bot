@@ -14,6 +14,7 @@ import {
   Code,
   LogOut,
   Home,
+  Users,
 } from "lucide-react";
 
 interface User {
@@ -21,6 +22,7 @@ interface User {
   name: string | null;
   email: string | null;
   image: string | null;
+  isAdmin?: boolean;
 }
 
 const navigation = [
@@ -30,6 +32,10 @@ const navigation = [
   { name: "שיחות", href: "/dashboard/conversations", icon: MessagesSquare },
   { name: "בדיקה", href: "/dashboard/playground", icon: Play },
   { name: "הטמעה", href: "/dashboard/embed", icon: Code },
+];
+
+const adminNavigation = [
+  { name: "ניהול משתמשים", href: "/dashboard/admin", icon: Users },
 ];
 
 export function Sidebar({ user }: { user: User }) {
@@ -42,6 +48,10 @@ export function Sidebar({ user }: { user: User }) {
     router.refresh();
   };
 
+  const allNavigation = user.isAdmin
+    ? [...navigation, ...adminNavigation]
+    : navigation;
+
   return (
     <div className="flex h-full w-64 flex-col border-l bg-white">
       {/* Logo */}
@@ -52,7 +62,7 @@ export function Sidebar({ user }: { user: User }) {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-4">
-        {navigation.map((item) => {
+        {allNavigation.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
@@ -87,7 +97,14 @@ export function Sidebar({ user }: { user: User }) {
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="font-medium truncate">{user.name || "משתמש"}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-medium truncate">{user.name || "משתמש"}</p>
+              {user.isAdmin && (
+                <span className="text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded">
+                  מנהל
+                </span>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground truncate">{user.email}</p>
           </div>
         </div>
