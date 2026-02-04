@@ -4,6 +4,14 @@ import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
   try {
+    if (!process.env.DATABASE_URL) {
+      console.error("Registration: DATABASE_URL is not set");
+      return NextResponse.json(
+        { error: "השרת לא מוגדר. חסר חיבור למסד נתונים." },
+        { status: 503 }
+      );
+    }
+
     const { name, email, password } = await req.json();
 
     if (!email || !password) {
@@ -59,7 +67,17 @@ export async function POST(req: Request) {
       message: "המשתמש נוצר בהצלחה",
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const isPrisma = message.includes("prisma") || message.includes("P1001") || message.includes("P1002");
     console.error("Registration error:", error);
+
+    if (process.env.NODE_ENV === "development" || isPrisma) {
+      return NextResponse.json(
+        { error: "אירעה שגיאה בהרשמה", details: message },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
       { error: "אירעה שגיאה בהרשמה" },
       { status: 500 }

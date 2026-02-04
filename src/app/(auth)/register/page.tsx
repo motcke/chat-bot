@@ -51,7 +51,8 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "שגיאה בהרשמה");
+        const msg = data.details ? `${data.error} (${data.details})` : (data.error || "שגיאה בהרשמה");
+        throw new Error(msg);
       }
 
       toast({
