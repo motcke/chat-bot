@@ -10,7 +10,7 @@ function getOpenRouterClient(): OpenAI {
     openrouterClient = new OpenAI({
       apiKey: process.env.OPENROUTER_API_KEY,
       baseURL: "https://openrouter.ai/api/v1",
-      timeout: 30000, // 30 second timeout per request
+      timeout: 60000, // 60 second timeout per request
       maxRetries: 2,
     });
   }
@@ -34,18 +34,18 @@ export async function createEmbedding(text: string): Promise<number[]> {
 export async function createEmbeddings(
   texts: string[]
 ): Promise<number[][]> {
-  // Process in batches of 10 to avoid rate limits and timeouts
-  const batchSize = 10;
+  // Process in batches of 15 - with max 30 chunks, this means only 2 API calls
+  const batchSize = 15;
   const allEmbeddings: number[][] = [];
 
   console.log(`Creating embeddings for ${texts.length} chunks in batches of ${batchSize}`);
 
   for (let i = 0; i < texts.length; i += batchSize) {
-    const batch = texts.slice(i, i + batchSize).map(t => t.slice(0, 8000)); // Limit each text
+    const batch = texts.slice(i, i + batchSize).map(t => t.slice(0, 8000));
     const batchNum = Math.floor(i / batchSize) + 1;
     const totalBatches = Math.ceil(texts.length / batchSize);
 
-    console.log(`Processing batch ${batchNum}/${totalBatches}`);
+    console.log(`Processing embedding batch ${batchNum}/${totalBatches}...`);
 
     try {
       const response = await getOpenRouterClient().embeddings.create({
@@ -54,15 +54,11 @@ export async function createEmbeddings(
       });
 
       allEmbeddings.push(...response.data.map((d) => d.embedding));
-      console.log(`Batch ${batchNum} completed`);
+      console.log(`Embedding batch ${batchNum}/${totalBatches} completed`);
 
-      // Small delay between batches to avoid rate limits
-      if (i + batchSize < texts.length) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
     } catch (error: any) {
-      console.error(`Batch ${batchNum} failed:`, error?.message || error);
-      throw new Error(`Batch ${batchNum} failed: ${error?.message || "Unknown error"}`);
+      console.error(`Embedding batch ${batchNum} failed:`, error?.message || error);
+      throw new Error(`Embedding batch ${batchNum} failed: ${error?.message || "Unknown error"}`);
     }
   }
 
