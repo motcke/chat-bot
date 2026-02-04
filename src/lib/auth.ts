@@ -122,9 +122,10 @@ export async function getCurrentUser() {
     return null;
   }
 
+  const userId = session.user.id;
   const user = await withRetry(() =>
     prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
     })
   );
 
