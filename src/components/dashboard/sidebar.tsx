@@ -15,6 +15,7 @@ import {
   LogOut,
   Users,
   Bot,
+  HelpCircle,
 } from "lucide-react";
 
 interface User {
@@ -32,6 +33,7 @@ const navigation = [
   { name: "שיחות", href: "/dashboard/conversations", icon: MessagesSquare },
   { name: "בדיקה", href: "/dashboard/playground", icon: Play },
   { name: "הטמעה", href: "/dashboard/embed", icon: Code },
+  { name: "עזרה", href: "/dashboard/help", icon: HelpCircle },
 ];
 
 const adminNavigation = [
