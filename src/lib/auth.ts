@@ -78,9 +78,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             );
           } else {
             // Update to admin if not already
+            const userId = user.id;
             await withRetry(() =>
               prisma.user.update({
-                where: { id: user.id },
+                where: { id: userId },
                 data: { isAdmin: true },
               })
             );
