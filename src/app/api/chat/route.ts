@@ -81,8 +81,40 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    // Skip knowledge query for now to simplify debugging
-    const context = "";
+    // Simple text search in knowledge sources
+    let context = "";
+    try {
+      const knowledgeSources = await prisma.knowledgeSource.findMany({
+        where: {
+          chatbotId: chatbot.id,
+          status: "ready",
+        },
+        select: {
+          content: true,
+          name: true,
+        },
+      });
+
+      // Search for relevant content (simple keyword match)
+      const keywords = message.toLowerCase().split(/\s+/).filter((w: string) => w.length > 2);
+      const relevantSources: string[] = [];
+
+      for (const source of knowledgeSources) {
+        if (!source.content) continue;
+        const contentLower = source.content.toLowerCase();
+        const hasMatch = keywords.some((kw: string) => contentLower.includes(kw));
+        if (hasMatch) {
+          // Take first 2000 chars of matching source
+          relevantSources.push(`[${source.name}]: ${source.content.slice(0, 2000)}`);
+        }
+      }
+
+      if (relevantSources.length > 0) {
+        context = "מידע רלוונטי מהמאגר:\n" + relevantSources.slice(0, 3).join("\n\n");
+      }
+    } catch (e) {
+      console.error("Knowledge search error:", e);
+    }
 
     // Build message history
     const chatMessages: ChatMessage[] = conversation.messages.map((m: { role: string; content: string }) => ({
