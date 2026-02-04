@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { indexKnowledge } from "@/lib/vectors";
+import { withRetry } from "@/lib/withRetry";
 
 export const dynamic = 'force-dynamic';
 
@@ -13,9 +14,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const chatbot = await prisma.chatbot.findFirst({
-      where: { userId: user.id },
-    });
+    const chatbot = await withRetry(() =>
+      prisma.chatbot.findFirst({
+        where: { userId: user.id },
+      })
+    );
 
     if (!chatbot) {
       return NextResponse.json({ error: "Chatbot not found" }, { status: 404 });
@@ -58,15 +61,17 @@ export async function POST(req: NextRequest) {
       }
 
       // Create knowledge source
-      const source = await prisma.knowledgeSource.create({
-        data: {
-          chatbotId: chatbot.id,
-          type: "file",
-          name: file.name,
-          content,
-          status: "processing",
-        },
-      });
+      const source = await withRetry(() =>
+        prisma.knowledgeSource.create({
+          data: {
+            chatbotId: chatbot.id,
+            type: "file",
+            name: file.name,
+            content,
+            status: "processing",
+          },
+        })
+      );
 
       // Process embeddings in background
       processKnowledge(chatbot.id, source.id, content);
@@ -84,24 +89,30 @@ export async function POST(req: NextRequest) {
 async function processKnowledge(chatbotId: string, sourceId: string, content: string) {
   try {
     if (!content.trim()) {
-      await prisma.knowledgeSource.update({
-        where: { id: sourceId },
-        data: { status: "failed", error: "No content found" },
-      });
+      await withRetry(() =>
+        prisma.knowledgeSource.update({
+          where: { id: sourceId },
+          data: { status: "failed", error: "No content found" },
+        })
+      );
       return;
     }
 
     await indexKnowledge(chatbotId, sourceId, content);
 
-    await prisma.knowledgeSource.update({
-      where: { id: sourceId },
-      data: { status: "ready" },
-    });
+    await withRetry(() =>
+      prisma.knowledgeSource.update({
+        where: { id: sourceId },
+        data: { status: "ready" },
+      })
+    );
   } catch (error: any) {
     console.error("Process knowledge error:", error);
-    await prisma.knowledgeSource.update({
-      where: { id: sourceId },
-      data: { status: "failed", error: error.message },
-    });
+    await withRetry(() =>
+      prisma.knowledgeSource.update({
+        where: { id: sourceId },
+        data: { status: "failed", error: error.message },
+      })
+    );
   }
 }
