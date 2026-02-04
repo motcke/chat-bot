@@ -5,7 +5,7 @@ import { withRetry } from "@/lib/withRetry";
 import { indexKnowledge } from "@/lib/vectors";
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120;
+export const maxDuration = 60; // 1 minute - reduced to avoid timeouts
 
 export async function POST(
   req: NextRequest,
@@ -46,6 +46,10 @@ export async function POST(
       return NextResponse.json({ error: "Source has no content" }, { status: 400 });
     }
 
+    // Limit content to 100KB to prevent timeout
+    const maxContentLength = 100000;
+    const processedContent = source.content.slice(0, maxContentLength);
+
     // Update status to processing
     await withRetry(() =>
       prisma.knowledgeSource.update({
@@ -56,7 +60,7 @@ export async function POST(
 
     try {
       // Process embeddings
-      await indexKnowledge(chatbot.id, source.id, source.content);
+      await indexKnowledge(chatbot.id, source.id, processedContent);
 
       // Update status to ready
       const updatedSource = await withRetry(() =>

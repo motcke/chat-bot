@@ -10,6 +10,8 @@ function getOpenRouterClient(): OpenAI {
     openrouterClient = new OpenAI({
       apiKey: process.env.OPENROUTER_API_KEY,
       baseURL: "https://openrouter.ai/api/v1",
+      timeout: 30000, // 30 second timeout per request
+      maxRetries: 2,
     });
   }
   return openrouterClient;
@@ -32,32 +34,40 @@ export async function createEmbedding(text: string): Promise<number[]> {
 export async function createEmbeddings(
   texts: string[]
 ): Promise<number[][]> {
-  try {
-    // Process in batches of 20 to avoid rate limits
-    const batchSize = 20;
-    const allEmbeddings: number[][] = [];
+  // Process in batches of 10 to avoid rate limits and timeouts
+  const batchSize = 10;
+  const allEmbeddings: number[][] = [];
 
-    for (let i = 0; i < texts.length; i += batchSize) {
-      const batch = texts.slice(i, i + batchSize).map(t => t.slice(0, 8000)); // Limit each text
+  console.log(`Creating embeddings for ${texts.length} chunks in batches of ${batchSize}`);
 
+  for (let i = 0; i < texts.length; i += batchSize) {
+    const batch = texts.slice(i, i + batchSize).map(t => t.slice(0, 8000)); // Limit each text
+    const batchNum = Math.floor(i / batchSize) + 1;
+    const totalBatches = Math.ceil(texts.length / batchSize);
+
+    console.log(`Processing batch ${batchNum}/${totalBatches}`);
+
+    try {
       const response = await getOpenRouterClient().embeddings.create({
         model: "openai/text-embedding-3-small",
         input: batch,
       });
 
       allEmbeddings.push(...response.data.map((d) => d.embedding));
+      console.log(`Batch ${batchNum} completed`);
 
       // Small delay between batches to avoid rate limits
       if (i + batchSize < texts.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
+    } catch (error: any) {
+      console.error(`Batch ${batchNum} failed:`, error?.message || error);
+      throw new Error(`Batch ${batchNum} failed: ${error?.message || "Unknown error"}`);
     }
-
-    return allEmbeddings;
-  } catch (error: any) {
-    console.error("Batch embedding creation error:", error?.message || error);
-    throw new Error(`Failed to create embeddings: ${error?.message || "Unknown error"}`);
   }
+
+  console.log(`All ${allEmbeddings.length} embeddings created successfully`);
+  return allEmbeddings;
 }
 
 export function chunkText(text: string, chunkSize: number = 1000, overlap: number = 200): string[] {

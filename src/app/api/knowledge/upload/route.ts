@@ -5,10 +5,10 @@ import { withRetry } from "@/lib/withRetry";
 import { indexKnowledge } from "@/lib/vectors";
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120; // 2 minutes for upload + processing
+export const maxDuration = 60; // 1 minute - reduced to avoid timeouts
 
 export async function POST(req: NextRequest) {
-  console.log("Upload route called");
+  console.log("Upload route called at", new Date().toISOString());
 
   try {
     const user = await getCurrentUser();
@@ -83,6 +83,13 @@ export async function POST(req: NextRequest) {
           );
         }
 
+        // Limit content to 100KB to prevent timeout
+        const maxContentLength = 100000;
+        if (content.length > maxContentLength) {
+          console.log(`Content truncated from ${content.length} to ${maxContentLength}`);
+        }
+        const processedContent = content.slice(0, maxContentLength);
+
         // Save to database with processing status
         const source = await withRetry(() =>
           prisma.knowledgeSource.create({
@@ -90,7 +97,7 @@ export async function POST(req: NextRequest) {
               chatbotId: chatbot.id,
               type: "file",
               name: file.name,
-              content,
+              content: processedContent,
               status: "processing",
             },
           })
@@ -100,7 +107,7 @@ export async function POST(req: NextRequest) {
         // Process embeddings directly
         try {
           console.log("Starting indexKnowledge for:", source.id);
-          await indexKnowledge(chatbot.id, source.id, content);
+          await indexKnowledge(chatbot.id, source.id, processedContent);
           console.log("indexKnowledge completed for:", source.id);
 
           // Update status to ready
@@ -158,9 +165,13 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error("Upload route error:", error?.message || error);
+    // Always return JSON, never let it fall through to HTML error page
     return NextResponse.json(
-      { error: "שגיאה בהעלאת הקובץ" },
-      { status: 500 }
+      { error: error?.message || "שגיאה בהעלאת הקובץ" },
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
     );
   }
 }

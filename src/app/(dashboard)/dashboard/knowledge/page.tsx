@@ -77,6 +77,14 @@ export default function KnowledgePage() {
         body: formData,
       });
 
+      // Check if response is JSON
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("השרת לא הגיב כראוי. נסה שוב או העלה קובץ קטן יותר.");
+      }
+
+      const data = await res.json();
+
       if (res.ok) {
         toast({
           title: "הועלה בהצלחה!",
@@ -84,15 +92,15 @@ export default function KnowledgePage() {
         });
         fetchSources();
       } else {
-        const data = await res.json();
         throw new Error(data.error || "שגיאה בהעלאה");
       }
     } catch (error: any) {
       toast({
         title: "שגיאה",
-        description: error.message,
+        description: error.message || "שגיאה בהעלאת הקובץ",
         variant: "destructive",
       });
+      fetchSources(); // Refresh to see if file was added
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -112,6 +120,14 @@ export default function KnowledgePage() {
         body: JSON.stringify({ url }),
       });
 
+      // Check if response is JSON
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("השרת לא הגיב כראוי. נסה שוב.");
+      }
+
+      const data = await res.json();
+
       if (res.ok) {
         toast({
           title: "נוסף בהצלחה!",
@@ -120,15 +136,15 @@ export default function KnowledgePage() {
         setUrl("");
         fetchSources();
       } else {
-        const data = await res.json();
         throw new Error(data.error || "שגיאה בהוספת לינק");
       }
     } catch (error: any) {
       toast({
         title: "שגיאה",
-        description: error.message,
+        description: error.message || "שגיאה בהוספת לינק",
         variant: "destructive",
       });
+      fetchSources(); // Refresh to see if source was added
     } finally {
       setIsAddingUrl(false);
     }
