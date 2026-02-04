@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,110 @@ import {
   Send,
   User,
 } from "lucide-react";
+
+// Animated Background Component
+function AnimatedBackground() {
+  // Generate random positions for floating elements
+  const floatingElements = useMemo(() => {
+    return Array.from({ length: 20 }, (_, i) => ({
+      id: i,
+      size: Math.random() * 300 + 100,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      duration: Math.random() * 20 + 20,
+      delay: Math.random() * -20,
+      opacity: Math.random() * 0.3 + 0.1,
+      color: i % 3 === 0 ? "blue" : i % 3 === 1 ? "purple" : "cyan",
+    }));
+  }, []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Gradient mesh background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50" />
+
+      {/* Animated grid */}
+      <div className="absolute inset-0 opacity-[0.03]">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(59, 130, 246, 0.5) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(59, 130, 246, 0.5) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px',
+            animation: 'gridMove 20s linear infinite',
+          }}
+        />
+      </div>
+
+      {/* Floating gradient orbs */}
+      {floatingElements.map((el) => (
+        <div
+          key={el.id}
+          className="absolute rounded-full blur-3xl"
+          style={{
+            width: el.size,
+            height: el.size,
+            left: `${el.x}%`,
+            top: `${el.y}%`,
+            opacity: el.opacity,
+            background: el.color === "blue"
+              ? "radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%)"
+              : el.color === "purple"
+              ? "radial-gradient(circle, rgba(147, 51, 234, 0.4) 0%, transparent 70%)"
+              : "radial-gradient(circle, rgba(6, 182, 212, 0.4) 0%, transparent 70%)",
+            animation: `float${el.id % 4} ${el.duration}s ease-in-out infinite`,
+            animationDelay: `${el.delay}s`,
+          }}
+        />
+      ))}
+
+      {/* Animated particles */}
+      <div className="absolute inset-0">
+        {Array.from({ length: 30 }, (_, i) => (
+          <div
+            key={`particle-${i}`}
+            className="absolute w-1 h-1 bg-blue-400 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              opacity: Math.random() * 0.5 + 0.2,
+              animation: `particle ${Math.random() * 10 + 10}s linear infinite`,
+              animationDelay: `${Math.random() * -10}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Glowing lines */}
+      <svg className="absolute inset-0 w-full h-full opacity-20">
+        <defs>
+          <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(59, 130, 246, 0)" />
+            <stop offset="50%" stopColor="rgba(59, 130, 246, 0.5)" />
+            <stop offset="100%" stopColor="rgba(59, 130, 246, 0)" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M0,200 Q400,100 800,200 T1600,200"
+          fill="none"
+          stroke="url(#lineGradient)"
+          strokeWidth="2"
+          className="animate-wave"
+        />
+        <path
+          d="M0,400 Q400,300 800,400 T1600,400"
+          fill="none"
+          stroke="url(#lineGradient)"
+          strokeWidth="2"
+          className="animate-wave"
+          style={{ animationDelay: '-2s' }}
+        />
+      </svg>
+    </div>
+  );
+}
 
 // Animated chat messages
 const chatMessages = [
@@ -156,12 +260,9 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-bl from-blue-50 via-white to-gray-50">
-      {/* Decorative background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-100 rounded-full blur-3xl opacity-30"></div>
-        <div className="absolute bottom-1/4 right-0 w-96 h-96 bg-purple-100 rounded-full blur-3xl opacity-30"></div>
-      </div>
+    <div className="min-h-screen bg-white relative">
+      {/* Animated Background */}
+      <AnimatedBackground />
 
       {/* Header */}
       <header
@@ -445,6 +546,96 @@ export default function HomePage() {
 
         .animate-fade-in {
           animation: fade-in 0.3s ease-out forwards;
+        }
+
+        @keyframes gridMove {
+          0% {
+            transform: translate(0, 0);
+          }
+          100% {
+            transform: translate(60px, 60px);
+          }
+        }
+
+        @keyframes float0 {
+          0%, 100% {
+            transform: translate(0, 0) scale(1);
+          }
+          25% {
+            transform: translate(30px, -30px) scale(1.1);
+          }
+          50% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          75% {
+            transform: translate(40px, 10px) scale(1.05);
+          }
+        }
+
+        @keyframes float1 {
+          0%, 100% {
+            transform: translate(0, 0) rotate(0deg);
+          }
+          33% {
+            transform: translate(-40px, 30px) rotate(5deg);
+          }
+          66% {
+            transform: translate(30px, -40px) rotate(-5deg);
+          }
+        }
+
+        @keyframes float2 {
+          0%, 100% {
+            transform: translate(0, 0) scale(1);
+          }
+          50% {
+            transform: translate(50px, 50px) scale(1.2);
+          }
+        }
+
+        @keyframes float3 {
+          0%, 100% {
+            transform: translate(0, 0);
+          }
+          25% {
+            transform: translate(-30px, 40px);
+          }
+          50% {
+            transform: translate(40px, -30px);
+          }
+          75% {
+            transform: translate(-20px, -20px);
+          }
+        }
+
+        @keyframes particle {
+          0% {
+            transform: translateY(0) translateX(0);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.6;
+          }
+          90% {
+            opacity: 0.6;
+          }
+          100% {
+            transform: translateY(-100vh) translateX(50px);
+            opacity: 0;
+          }
+        }
+
+        @keyframes wave {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+
+        .animate-wave {
+          animation: wave 8s ease-in-out infinite;
         }
       `}</style>
     </div>
