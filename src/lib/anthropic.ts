@@ -27,7 +27,7 @@ export async function generateChatResponse(
     : systemPrompt;
 
   const response = await getAnthropicClient().messages.create({
-    model: "anthropic/claude-sonnet-4-20250514",
+    model: "anthropic/claude-3.5-sonnet",
     max_tokens: 1024,
     system: fullSystemPrompt,
     messages: messages.map((m) => ({
@@ -50,7 +50,7 @@ export async function* generateChatResponseStream(
     : systemPrompt;
 
   const stream = await getAnthropicClient().messages.stream({
-    model: "anthropic/claude-sonnet-4-20250514",
+    model: "anthropic/claude-3.5-sonnet",
     max_tokens: 1024,
     system: fullSystemPrompt,
     messages: messages.map((m) => ({
